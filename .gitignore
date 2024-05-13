@@ -5,3 +5,4 @@
 .lesshst
 .terraform.d/
 **/*.swp
+**/.terraform
