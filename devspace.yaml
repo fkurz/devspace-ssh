@@ -1,0 +1,59 @@
+version: v2beta1
+name: devspace
+
+# This is a list of `pipelines` that DevSpace can execute (you can define your own)
+pipelines:
+  # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
+  dev:
+    run: |-
+      run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
+      ensure_pull_secrets --all    # 2. Ensure pull secrets
+      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
+      start_dev the-dev-container                # 4. Start dev mode "app" (see "dev" section)
+  # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
+  deploy:
+    run: |-
+      run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
+      ensure_pull_secrets --all                         # 2. Ensure pull secrets
+      build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
+      create_deployments --all                          # 4. Deploy Helm charts and manifests specfied as "deployments"
+
+# This is a list of `deployments` that DevSpace can create for this project
+deployments:
+  the-dev-container:
+    # This deployment uses `helm` but you can also define `kubectl` deployments or kustomizations
+    helm:
+      # We are deploying this project with the Helm chart you provided
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+      # Under `values` we can define the values for this Helm chart used during `helm install/upgrade`
+      # You may also use `valuesFiles` to load values from files, e.g. valuesFiles: ["values.yaml"]
+      values:
+        containers:
+          - image: "${THE_DEV_CONTAINER_IMAGE}"
+            imagePullPolicy: IfNotPresent
+            resources:
+              requests:
+                memory: "500Mi"
+                cpu: "500m"
+              limits:
+                memory: "1Gi"
+                cpu: "1"
+
+# This is a list of `dev` containers that are based on the containers created by your deployments
+dev:
+  the-dev-container:
+    # Search for the container that runs this image
+    imageSelector: "${THE_DEV_CONTAINER_IMAGE}"
+      # Inject a lightweight SSH server into the container (so your IDE can connect to the remote dev env)
+    ssh:
+      localPort: 60550 # Fix the port to forward to the SSH port of the container
+    command: ["sleep", "infinity"]
+    sync:
+    - path: ./:/home/dev
+
+vars:
+  THE_DEV_CONTAINER_IMAGE:
+    source: env
+    default: ubuntu:22.04
