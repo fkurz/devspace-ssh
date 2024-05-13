@@ -1,0 +1,7 @@
+.aws/
+.bash_history
+.devspace/
+.kube/
+.lesshst
+.terraform.d/
+**/*.swp
