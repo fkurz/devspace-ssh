@@ -8,7 +8,7 @@ PoC for remote SSH development on dev containers deployed in Kubernetes using De
 * Terraform
 * AWS CLI 
 * [DevSpace](https://devspace.sh/) 
-* jq 
+* Helm
 
 ### 2. Create an EKS cluster on AWS with Terraform
 
@@ -23,7 +23,7 @@ terraform -chdir=terraform init
 terraform -chdir=terraform apply 
 ```
 
-> :information_source: `<the-access-key-id>` and `<the-secret-access-key>` have to be a valid credential pair authorized to create an AWS EKS cluster.
+> :information_source: `<the-access-key-id>` and `<the-secret-access-key>` have to be a valid credential pair authorized to create an AWS EKS cluster, AWS ECR registry and related infrastructure.
 
 With the infrastructure in place, point `kubectl` to the created EKS cluster.
 ```bash
@@ -32,7 +32,7 @@ THE_CLUSTER_NAME="$(terraform -chdir=terraform output -raw cluster_name)"
 aws eks --region "$THE_REGION" update-kubeconfig --name "$THE_CLUSTER_NAME"
 ```
 
-### 3. Make dev container image availabler inside the cluster
+### 3. Make dev container image available inside the cluster
 
 Log in to the ECR
 ```bash
@@ -53,32 +53,17 @@ kubectl create ns devspace
 devspace use namespace devspace
 ```
 
-Now, running `devspace dev` while specifying the container image just pushed to our ECR instance should result in an output similar to the following: 
-```bash
-$ devspace dev --var THE_DEV_CONTAINER_IMAGE="${THE_ECR_REPOSITORY_URL}:latest"
-info Using namespace 'devspace'
-info Using kube context 'arn:aws:eks:eu-central-1:174394581677:cluster/devspace-eks-QbUEJaxD'
-deploy:the-dev-container Deploying chart /home/lima.linux/.devspace/component-chart/component-chart-0.9.1.tgz (the-dev-container) with helm...
-deploy:the-dev-container Deployed helm chart (Release revision: 1)
-deploy:the-dev-container Successfully deployed the-dev-container with helm
-dev:the-dev-container Waiting for pod to become ready...
-dev:the-dev-container Selected pod the-dev-container-devspace-847f75dd44-s8m4l
-dev:the-dev-container sync  Sync started on: ./ <-> /home/dev
-dev:the-dev-container sync  Waiting for initial sync to complete
-dev:the-dev-container sync  Initial sync completed
-dev:the-dev-container ssh   Port forwarding started on: 60550 -> 8022
-dev:the-dev-container ssh   Use 'ssh the-dev-container.devspace.devspace' to connect via SSH
+Deploy your dev container to the remote cluster with DevSpace:
+``bash
+devspace dev --var THE_DEV_CONTAINER_IMAGE="${THE_ECR_REPOSITORY_URL}:latest"
 ```
 
-We may now connect to the running dev container via SSH on localhost port 60550; or, simply using the SSH configuration with
-```bash
-ssh the-dev-container.devspace.devspace
-```
-E.g. we may verify that we are actually running a command on the DevSpace pod, by running
+Verify that we are actually running a command on the DevSpace pod, by running
 ```bash
 $ ssh the-dev-container.devspace.devspace 'hostname'
 the-dev-container-devspace-847f75dd44-s8m4l
 ```
+
 The output should be the name of the pod created by DevSpace.
 
 ## Clean up
