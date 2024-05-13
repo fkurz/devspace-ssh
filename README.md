@@ -8,6 +8,7 @@ PoC for remote SSH development on dev containers deployed in Kubernetes using De
 * Terraform
 * AWS CLI 
 * [DevSpace](https://devspace.sh/) 
+* Kubectl
 * Helm
 
 ### 2. Create an EKS cluster on AWS with Terraform
@@ -54,7 +55,7 @@ devspace use namespace devspace
 ```
 
 Deploy your dev container to the remote cluster with DevSpace:
-``bash
+```bash
 devspace dev --var THE_DEV_CONTAINER_IMAGE="${THE_ECR_REPOSITORY_URL}:latest"
 ```
 
