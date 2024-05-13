@@ -23,6 +23,7 @@ export TF_VAR_region="$(aws configure get default.region)"
 terraform -chdir=terraform init
 terraform -chdir=terraform apply 
 ```
+Confirm that you want to create the resources.
 
 > :information_source: `<the-access-key-id>` and `<the-secret-access-key>` have to be a valid credential pair authorized to create an AWS EKS cluster, AWS ECR registry and related infrastructure.
 
@@ -43,7 +44,7 @@ aws ecr get-login-password --region "$THE_REGION" | docker login --username AWS 
 
 Build and push the dev container image
 ```bash
-docker buildx build --platform linux/amd64 --tag "${THE_REPOSITORY_URL}:latest" --file docker/devcontainer.Dockerfile --push .
+docker buildx build --platform linux/amd64 --tag "${THE_ECR_REPOSITORY_URL}:latest" --file docker/devcontainer.Dockerfile --push .
 ```
 
 ### 4. Start a dev container on the ECR cluster with DevSpace
@@ -69,7 +70,10 @@ The output should be the name of the pod created by DevSpace.
 
 ## Clean up
 
+Stop the running DevSpace process and then run
 ```bash
 devspace purge
+aws ecr batch-delete-image --repository-name "$THE_ECR_REPOSITORY_NAME" --image-ids "$(aws ecr list-images --repository-name=$THE_ECR_REPOSITORY_NAME --query 'imageIds[*]')"
 terraform -chdir=terraform destroy
 ```
+Confirm that you want to destroy the deployed resources.
